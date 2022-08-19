@@ -47,7 +47,7 @@ class TimeTracker {
     getFormattedTimeToLeave() {
         let timeToLeave = this.getEstimatedTimeToLeave();
         let date = new Date(timeToLeave);
-        return date.toLocaleDateString("en-EN", { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: "2-digit" });
+        return date.toLocaleTimeString("en-EN", {hour: '2-digit', minute: "2-digit" });
     }
     static checkForUpdate(timeTracker) {
         if (!timeTracker.startTime) return false;
@@ -77,28 +77,39 @@ class TimeTracker {
         }
         return sum;
     }
+    choosePhaseEmoji(phase){
+        if(phase.type == "Work"){
+            return '&#x1F4BB;'; 
+        }
+        else {
+            if(phase.duration >= 5*60*1000 && phase.duration < 30*60*1000) return "&#x2615;"
+            else if(phase.duration < 2*60*1000) return "&#x1F4F1;"
+            else if(phase.duration >= 2*60*1000 && phase.duration < 5*60*1000) return "&#x1F6BB;"
+            else if(phase.duration >= 30*60*1000) return "&#x1F371;";
+        }
+    }
     buildPhasesTemplates(parentNode) {
         parentNode.innerHTML = "";
         for (let i = 0; i < this.phases.length - 1; i++) {
             let phase = this.phases[i];
             let phaseDiv = document.createElement("div");
-            phaseDiv.innerHTML = `<strong>${phase.type} phase : </strong> Duration : ${formatTime(phase.duration)}`;
+            phaseDiv.innerHTML = `<span>${this.choosePhaseEmoji(phase)}</span> ${formatTime(phase.duration)}`;
             parentNode.appendChild(phaseDiv);
         }
     }
     updateRemainingTimeTemplate(node) {
-        node.innerHTML = `Your remaining work time is ${formatTime(-this.debt)}`
+        node.innerHTML = `&#9203; Your remaining work time is ${formatTime(-this.debt)}`
     }
     updateTimeToLeaveTemplate(node) {
-        node.innerHTML = `Your approximated time to leave is ${this.getFormattedTimeToLeave()}`
+        node.innerHTML = `&#x1F3C1; Your approximated time to leave is ${this.getFormattedTimeToLeave()}`
     }
     updateStartingTimeTemplate(node) {
         if (!this.startTime) {
-            node.innerHTML = "Your work day hasn't started yet."
+            node.innerHTML = "&#128681; Your work day hasn't started yet."
         }
         else {
-            let start = new Date(this.startTime).toLocaleDateString("en-EN", { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: "2-digit" });
-            node.innerHTML = `Your work day started ${start}`
+            let start = new Date(this.startTime).toLocaleTimeString("en-EN", { hour: '2-digit', minute: "2-digit" });
+            node.innerHTML = `&#128681; Your work day started ${start}`
         }
     }
     updateCurrentPhaseTemplate(node) {
@@ -152,7 +163,7 @@ hour.innerHTML = today.toLocaleTimeString("en-EN", { hour: '2-digit', minute: '2
 
 setInterval(() => {
     currentTimeTracker.updateCurrentPhaseTemplate(current)
-    currentTimeTracker.updateRemainingTimeTemplate(remaining)
+   
 }, 1000)
 
 button.addEventListener('click', () => {
