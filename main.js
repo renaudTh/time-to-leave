@@ -29,14 +29,15 @@ class TimeTracker {
         return JSON.parse(localStorage.getItem(storageKey));
     }
     getLastPhase() {
-        return this.phases.pop();
+        if(this.phases.length == 0) return null;
+        return this.phases[this.phases.length - 1]
     }
     getLastPhaseType() {
         if(this.phases.length == 0) return null;
         return this.phases[this.phases.length - 1].type;
     }
     store() {
-        localStorage.setItem("timeTracker", JSON.stringify(this));
+        localStorage.setItem(this.storageKey, JSON.stringify(this));
     }
     getDebt(){
         return this.debt;
@@ -118,6 +119,22 @@ class TimeTracker {
             node.innerHTML = `Work day started ${start}`
         }
     }
+    updateCurrentPhaseTemplate(node){
+        let phase = this.getLastPhase();
+        let phrase;
+        if(phase){
+            let start = phase.start;
+            let duration = Date.now() - start;
+            if(phase.type == "Work"){
+                phrase = `You are working for ${formatTime(duration)}`
+            }
+            else {
+                phrase = `You have break for ${formatTime(duration)}`
+            }
+            node.innerHTML = phrase;
+
+        }
+    }
 }
 
 function formatTime(time){
@@ -147,10 +164,15 @@ let hour = document.getElementById("hour");
 let ttl = document.getElementById("ttl");
 let phases = document.getElementById("phases");
 let remaining = document.getElementById("remaining");
+let current= document.getElementById("current");
 
 document.getElementById("today").innerText = todayFormatted;
 hour.innerHTML = today.toLocaleTimeString("en-EN", { hour: '2-digit', minute: '2-digit' });
 
+setInterval(() => {
+    currentTimeTracker.updateCurrentPhaseTemplate(current)
+    currentTimeTracker.updateRemainingTimeTemplate(remaining)
+},1000)
 
 button.addEventListener('click', () => {
 
@@ -159,7 +181,6 @@ button.addEventListener('click', () => {
     if (lastPhase) {
         lastPhase.end = Date.now();
         lastPhase.duration = lastPhase.end - lastPhase.start;
-        currentTimeTracker.addPhase(lastPhase);
     }
     else{
         currentTimeTracker.startTime = Date.now();
@@ -174,9 +195,9 @@ button.addEventListener('click', () => {
     currentTimeTracker.updateDebt();
     currentTimeTracker.updateRemainingTimeTemplate(remaining);
     currentTimeTracker.updateTimeToLeaveTemplate(ttl);
+    currentTimeTracker.updateCurrentPhaseTemplate(current)
     currentTimeTracker.store();
     currentTimeTracker.buildPhasesTemplates(phases);
-    
         working = !working;
     button.innerHTML = (working) ? "Pause" : "Work";
 })
