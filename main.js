@@ -89,7 +89,7 @@ class TimeTracker {
         }
     }
     buildPhasesTemplates(parentNode) {
-        parentNode.innerHTML = "";
+        parentNode.innerHTML = `<tr> <th>Type</th><th>Period</th><th>Duration</th></tr>`;
         for (let i = 0; i < this.phases.length - 1; i++) {
             let phase = this.phases[i];
             let start = new Date(phase.start).toLocaleTimeString("en-EN", {hour: "2-digit", minute:"2-digit"});
