@@ -5,7 +5,7 @@ class TimeTracker {
         this.debt = -dayDuration;
         this.storageKey = storageKey;
         this.dayDuration = dayDuration;
-        this.startTime = Date.now();
+        this.startTime = null;
         this.phases = [];
     }
 
@@ -42,23 +42,32 @@ class TimeTracker {
         return this.debt;
     }
     getEstimatedTimeToLeave(){
-        return this.startTime - this.debt;
+        if(!this.startTime){
+            return Date.now()-this.debt;
+        }
+        return this.startTime + this.dayDuration+ this.getBreakTime();
     }
     getFormattedTimeToLeave(){
-        let ttl = this.getEstimatedTimeToLeave();
-        let date = new Date(ttl);
-        return date.toLocaleDateString("fr-FR", {weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour:'2-digit', minute:"2-digit"});
+        let timeToLeave = this.getEstimatedTimeToLeave();
+        let date = new Date(timeToLeave);
+        return date.toLocaleDateString("en-EN", {weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour:'2-digit', minute:"2-digit"});
     }
     static checkForUpdate(timeTracker) {
+        if(!timeTracker.startTime) return false;
         let now = Date.now();
         let startPlusOneDay = timeTracker.startTime + 24 * 60 * 60 * 1000;
-        let bool = now >= startPlusOneDay
-        return bool;
+        return  (now >= startPlusOneDay)
     }
     
     updateDebt(){
-        let workingTime = this.getWorkingTime();
-        this.debt+= workingTime;
+
+        if(this.phases.length <= 1){
+            return;
+        }
+        let lastPhase = this.phases[this.phases.length - 2]
+        if(lastPhase.type == "Work" ){
+            this.debt+= lastPhase.duration;
+        }        
     }
     getWorkingTime() {
         let sum = 0;
@@ -71,15 +80,44 @@ class TimeTracker {
         }
         return sum;
     }
+    getBreakTime() {
+        let sum = 0;
+        let length = this.phases.length;
+        for(let i = 0; i< length - 1; i++){
+            let elt = this.phases[i]
+            if(elt.type == "Break"){
+                sum += elt.duration;
+            }
+        }
+        return sum;
+    }
+    getRemainigWorkingTime(){
+        return this.dayDuration
+    }
     buildPhasesTemplates(parentNode){
         parentNode.innerHTML = "";
-        for(let phase of this.phases){
+        for(let i = 0; i < this.phases.length - 1; i++){
+            let phase = this.phases[i];
             let phaseDiv = document.createElement("div");
             phaseDiv.innerHTML = `<strong>${phase.type} phase : </strong> Duration : ${formatTime(phase.duration)}`;
             parentNode.appendChild(phaseDiv);
         }
     }
-
+    updateRemainingTimeTemplate(node){
+        node.innerHTML = `Remaining work time: ${formatTime(-this.debt)}`
+    }
+    updateTimeToLeaveTemplate(node){
+        node.innerHTML = `TTL : ${this.getFormattedTimeToLeave()}`
+    }
+    updateStartingTimeTemplate(node){
+        if(!this.startTime){
+            node.innerHTML = "Your work day hasn't started yet."
+        }
+        else{
+            let start = new Date(this.startTime).toLocaleDateString("en-EN", {weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour:'2-digit', minute:"2-digit"});
+            node.innerHTML = `Work day started ${start}`
+        }
+    }
 }
 
 function formatTime(time){
@@ -88,7 +126,7 @@ function formatTime(time){
     let h = Math.floor(seconds / 60 /60 );
     seconds = seconds % (60*60);
     let m = Math.floor(seconds / 60);
-    s = seconds % 60;
+    let s = seconds % 60;
     h = (h < 10) ? '0'+h: h;
     m = (m < 10) ? '0'+m : m;
     s = (s < 10) ? '0'+s : s;
@@ -108,9 +146,10 @@ let button = document.getElementById("toggle");
 let hour = document.getElementById("hour");
 let ttl = document.getElementById("ttl");
 let phases = document.getElementById("phases");
+let remaining = document.getElementById("remaining");
 
 document.getElementById("today").innerText = todayFormatted;
-hour.innerHTML = today.toLocaleTimeString("fr-FR", { hour: '2-digit', minute: '2-digit' });
+hour.innerHTML = today.toLocaleTimeString("en-EN", { hour: '2-digit', minute: '2-digit' });
 
 
 button.addEventListener('click', () => {
@@ -122,7 +161,9 @@ button.addEventListener('click', () => {
         lastPhase.duration = lastPhase.end - lastPhase.start;
         currentTimeTracker.addPhase(lastPhase);
     }
-
+    else{
+        currentTimeTracker.startTime = Date.now();
+    }
     let currentPhase = {
         type: (working) ? "Break" : "Work",
         start: Date.now(),
@@ -131,10 +172,12 @@ button.addEventListener('click', () => {
     }
     currentTimeTracker.addPhase(currentPhase);
     currentTimeTracker.updateDebt();
+    currentTimeTracker.updateRemainingTimeTemplate(remaining);
+    currentTimeTracker.updateTimeToLeaveTemplate(ttl);
     currentTimeTracker.store();
     currentTimeTracker.buildPhasesTemplates(phases);
-    working = !working;
-
+    
+        working = !working;
     button.innerHTML = (working) ? "Pause" : "Work";
 })
 
@@ -142,7 +185,7 @@ window.addEventListener('load', () => {
 
     let json = TimeTracker.get("timeTracker");
     if (!json) {
-        currentTimeTracker = new TimeTracker("timeTracker", 30 * 60 * 1000);
+        currentTimeTracker = new TimeTracker("timeTracker", 7*60 * 60 * 1000);
     }
     else {
         let oldTT = TimeTracker.newFromJson(json);
@@ -155,10 +198,10 @@ window.addEventListener('load', () => {
 
     working = (currentTimeTracker.getLastPhaseType() == "Work");
     button.innerHTML = (working) ? "Pause" : "Work";
-    ttl.innerHTML = `TTL : ${currentTimeTracker.getFormattedTimeToLeave()}`
+    currentTimeTracker.updateStartingTimeTemplate(hour)
+    currentTimeTracker.updateTimeToLeaveTemplate(ttl);
+    currentTimeTracker.updateRemainingTimeTemplate(remaining);
     currentTimeTracker.store();
     currentTimeTracker.buildPhasesTemplates(phases);
     console.log(currentTimeTracker);
 })
-
-
