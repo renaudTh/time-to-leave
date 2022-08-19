@@ -92,9 +92,14 @@ class TimeTracker {
         parentNode.innerHTML = "";
         for (let i = 0; i < this.phases.length - 1; i++) {
             let phase = this.phases[i];
-            let phaseDiv = document.createElement("div");
-            phaseDiv.innerHTML = `<span>${this.choosePhaseEmoji(phase)}</span> ${formatTime(phase.duration)}`;
-            parentNode.appendChild(phaseDiv);
+            let start = new Date(phase.start).toLocaleTimeString("en-EN", {hour: "2-digit", minute:"2-digit"});
+            let end = new Date(phase.end).toLocaleTimeString("en-EN", {hour: "2-digit", minute:"2-digit"});
+
+            let phaseTr = document.createElement("tr");
+            phaseTr.innerHTML = `<td><span>${this.choosePhaseEmoji(phase)}</span></td>
+                                 <td>${start} - ${end}</td>
+                                 <td>${formatTime(phase.duration)}</td>`;
+            parentNode.appendChild(phaseTr);
         }
     }
     updateRemainingTimeTemplate(node) {

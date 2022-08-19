@@ -47,3 +47,8 @@ button:hover{
 span{
     font-size:large;
 }
+
+#phases{
+    width: 100%;
+    text-align: center;
+}
