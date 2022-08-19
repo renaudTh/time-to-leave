@@ -52,7 +52,7 @@ class TimeTracker {
     static checkForUpdate(timeTracker) {
         if (!timeTracker.startTime) return false;
         let now = Date.now();
-        let startPlusOneDay = timeTracker.startTime + 24 * 60 * 60 * 1000;
+        let startPlusOneDay = timeTracker.startTime + 12 * 60 * 60 * 1000;
         return (now >= startPlusOneDay)
     }
 
@@ -106,7 +106,7 @@ class TimeTracker {
         node.innerHTML = `&#9203; Your remaining work time is ${formatTime(-this.debt)}`
     }
     updateTimeToLeaveTemplate(node) {
-        node.innerHTML = `&#x1F3C1; Your approximated time to leave is ${this.getFormattedTimeToLeave()}`
+        node.innerHTML = `&#x1F3C1; Your time to leave is approximately ${this.getFormattedTimeToLeave()}`
     }
     updateStartingTimeTemplate(node) {
         if (!this.startTime) {
@@ -114,23 +114,20 @@ class TimeTracker {
         }
         else {
             let start = new Date(this.startTime).toLocaleTimeString("en-EN", { hour: '2-digit', minute: "2-digit" });
-            node.innerHTML = `&#128681; Your work day started ${start}`
+            node.innerHTML = `&#128681; Your work day started at ${start}`
         }
     }
     updateCurrentPhaseTemplate(node) {
         let phase = this.getLastPhase();
         let phrase;
         if (phase) {
-            let start = phase.start;
-            let duration = Date.now() - start;
-            if (phase.type == "Work") {
-                phrase = `You are working for ${formatTime(duration)}`
-            }
-            else {
-                phrase = `You have break for ${formatTime(duration)}`
-            }
-            node.innerHTML = phrase;
+            let duration = Date.now() - phase.start;
+            phrase = `You ${(phase.type == "Work") ? "are working " : "have break"} for ${formatTime(duration)}`
         }
+        else {
+            phrase = `Your work day hasn't started.`
+        }
+        node.innerHTML = phrase;
     }
 }
 
@@ -150,7 +147,7 @@ function formatTime(time) {
 
 const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
 let today = new Date()
-let todayFormatted = today.toLocaleDateString("fr-FR", options);
+let todayFormatted = today.toLocaleDateString("en-EN", options);
 let currentTimeTracker;
 
 
@@ -209,12 +206,19 @@ window.addEventListener('load', () => {
         let oldTT = TimeTracker.newFromJson(json);
         currentTimeTracker = oldTT;
         if (TimeTracker.checkForUpdate(oldTT)) {
-            currentTimeTracker.debt += currentTimeTracker.dayDuration;
+            currentTimeTracker = new TimeTracker("timeTracker", 7 * 60 * 60 * 1000);
+            //currentTimeTracker.debt += currentTimeTracker.dayDuration;
         }
     }
 
-
-    working = (currentTimeTracker.getLastPhase().type == "Work");
+    let lastPhase = currentTimeTracker.getLastPhase()
+    if(lastPhase){
+        working = (lastPhase.type == "Work");
+    }
+    else {
+        working = false;
+    }
+    
     button.innerHTML = (working) ? "Take a Break" : "Go Work !";
     currentTimeTracker.updateStartingTimeTemplate(hour)
     currentTimeTracker.updateTimeToLeaveTemplate(ttl);
