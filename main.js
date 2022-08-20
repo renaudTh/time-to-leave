@@ -58,7 +58,7 @@ class TimeTracker {
 
     getCumulativeTime(phaseType){
         if(!(phaseType instanceof PhaseType)) throw new Error("The phase type is incorrect");
-        return this.phases.slice(0, this.phases.length - 1)
+        return this.phases.slice(0, this.phases.length)
                           .filter((elt) => elt.type.equals(phaseType))
                           .reduce((prev, curr) => prev + curr.getDuration(), 0);
     }
@@ -74,7 +74,11 @@ class TimeTracker {
     }
     updateRemainingTimeTemplate(node) {
         let time = this.dayDuration - this.getCumulativeTime(PhaseType.Work);
-        node.innerHTML= `&#9203; Your remaining work time is ${formatTime(time)}`
+        let phrase = `&#9203; Your remaining work time is ${formatTime(time)}`
+        if(time < 0){
+            phrase = `&#x23F0;Your work is done, you may leave. Well done &#x1F4AA;`
+        }
+        node.innerHTML= phrase;
     }
     updateTimeToLeaveTemplate(node) {
         node.innerHTML = `&#x1F3C1; Your time to leave is approximately ${timeStringHm(this.getEstimatedTimeToLeave())}`
@@ -243,7 +247,7 @@ window.addEventListener('load', () => {
 
     let json = TimeTracker.get("timeTracker");
     if (!json) {
-        currentTimeTracker = new TimeTracker("timeTracker", 7 * 60 * 60 * 1000);
+        currentTimeTracker = new TimeTracker("timeTracker", 60 * 1000);
     }
     else {
         let oldTT = TimeTracker.newFromJson(json);
