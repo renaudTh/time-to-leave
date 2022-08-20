@@ -40,14 +40,13 @@ class TimeTracker {
     }
     getEstimatedTimeToLeave() {
         if (!this.startTime) {
-            return Date.now() - this.debt;
+            return Date.now() + this.dayDuration;
         }
         return this.startTime + this.dayDuration + this.getBreakTime();
     }
     getFormattedTimeToLeave() {
         let timeToLeave = this.getEstimatedTimeToLeave();
-        let date = new Date(timeToLeave);
-        return date.toLocaleTimeString("en-EN", { hour: '2-digit', minute: "2-digit" });
+        return timeStringHm(timeToLeave)
     }
     static checkForUpdate(timeTracker) {
         if (!timeTracker.startTime) return false;
@@ -56,22 +55,38 @@ class TimeTracker {
         return (now >= startPlusOneDay)
     }
 
-    updateDebt() {
-
-        if (this.phases.length <= 1) {
-            return;
-        }
-        let lastPhase = this.phases[this.phases.length - 2]
-        if (lastPhase.type == "Work") {
-            this.debt += lastPhase.duration;
-        }
-    }
     getBreakTime() {
-
-        return this.phases.slice(0, this.phases.length - 1)
+        let breakTime = 0;
+        let pastBreakTime = this.phases.slice(0, this.phases.length - 1)
                           .filter((elt) => elt.type == "Break")
                           .reduce((prev, curr) => prev + curr.duration, 0);
+        breakTime+=pastBreakTime;
+        let phase = this.getLastPhase();
+        if(phase){
+            if(phase.type == "Break"){
+                let duration = Date.now() - phase.start;
+                breakTime+=duration;
+            }
+        }
+        return breakTime;
     }
+
+    getWorkedTime(){
+        let workedTime = 0;
+        let pastWorkedTime = this.phases.slice(0, this.phases.length - 1)
+                          .filter((elt) => elt.type == "Work")
+                          .reduce((prev, curr) => prev + curr.duration, 0);
+        workedTime+=pastWorkedTime;
+        let phase = this.getLastPhase();
+        if(phase){
+            if(phase.type == "Work"){
+                let duration = Date.now() - phase.start;
+                workedTime+=duration;
+            }
+        }
+        return workedTime;
+    }
+
     choosePhaseEmoji(phase) {
         if (phase.type == "Work") {
             return '&#x1F4BB;';
@@ -80,36 +95,33 @@ class TimeTracker {
             if (phase.duration >= 5 * 60 * 1000 && phase.duration < 30 * 60 * 1000) return "&#x2615;"
             else if (phase.duration < 2 * 60 * 1000) return "&#x1F4F1;"
             else if (phase.duration >= 2 * 60 * 1000 && phase.duration < 5 * 60 * 1000) return "&#x1F6BB;"
-            else if (phase.duration >= 30 * 60 * 1000) return "&#x1F371;";
+            else if (phase.duration >= 30 * 60 * 1000) return "&#x1F35D;";
         }
     }
     buildPhasesTemplates(parentNode) {
         parentNode.innerHTML = `<tr> <th>Type</th><th>Period</th><th>Duration</th></tr>`;
         for (let i = 0; i < this.phases.length - 1; i++) {
             let phase = this.phases[i];
-            let start = new Date(phase.start).toLocaleTimeString("en-EN", { hour: "2-digit", minute: "2-digit" });
-            let end = new Date(phase.end).toLocaleTimeString("en-EN", { hour: "2-digit", minute: "2-digit" });
-
             let phaseTr = document.createElement("tr");
             phaseTr.innerHTML = `<td><span>${this.choosePhaseEmoji(phase)}</span></td>
-                                 <td>${start} - ${end}</td>
+                                 <td>${timeStringHm(phase.start)} - ${timeStringHm(phase.end)}</td>
                                  <td>${formatTime(phase.duration)}</td>`;
             parentNode.appendChild(phaseTr);
         }
     }
     updateRemainingTimeTemplate(node) {
-        node.innerHTML = `&#9203; Your remaining work time is ${formatTime(-this.debt)}`
+        let time = this.dayDuration - this.getWorkedTime();
+        node.innerHTML= `&#9203; Your remaining work time is ${formatTime(time)}`
     }
     updateTimeToLeaveTemplate(node) {
-        node.innerHTML = `&#x1F3C1; Your time to leave is approximately ${this.getFormattedTimeToLeave()}`
+        node.innerHTML = `&#x1F3C1; Your time to leave is approximately ${timeStringHm(this.getEstimatedTimeToLeave())}`
     }
     updateStartingTimeTemplate(node) {
         if (!this.startTime) {
             node.innerHTML = "&#128681; Your work day hasn't started yet."
         }
         else {
-            let start = new Date(this.startTime).toLocaleTimeString("en-EN", { hour: '2-digit', minute: "2-digit" });
-            node.innerHTML = `&#128681; Your work day started at ${start}`
+            node.innerHTML= `&#128681; Your work day started at ${timeStringHm(this.startTime)}`
         }
     }
     updateCurrentPhaseTemplate(node) {
@@ -122,13 +134,15 @@ class TimeTracker {
         else {
             phrase = `Your work day hasn't started.`
         }
-        node.innerHTML = phrase;
+        node.innerText = phrase;
     }
 }
 
+function timeStringHm(time){
+    return new Date(time).toLocaleTimeString("en-EN", { hour: '2-digit', minute: "2-digit" })
+}
 function formatTime(time) {
-
-    let seconds = Math.floor(time / 1000);
+    let seconds = Math.floor(time / 1000);  
     let h = Math.floor(seconds / 60 / 60);
     seconds = seconds % (60 * 60);
     let m = Math.floor(seconds / 60);
@@ -138,7 +152,6 @@ function formatTime(time) {
     s = (s < 10) ? '0' + s : s;
     return `${h}:${m}:${s}`
 }
-
 
 const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
 let today = new Date()
@@ -156,10 +169,12 @@ let remaining = document.getElementById("remaining");
 let current = document.getElementById("current");
 
 document.getElementById("today").innerText = todayFormatted;
-hour.innerHTML = today.toLocaleTimeString("en-EN", { hour: '2-digit', minute: '2-digit' });
 
 setInterval(() => {
-    currentTimeTracker.updateCurrentPhaseTemplate(current)
+    currentTimeTracker.updateCurrentPhaseTemplate(current);
+    currentTimeTracker.updateRemainingTimeTemplate(remaining);
+    currentTimeTracker.updateTimeToLeaveTemplate(ttl);
+
 
 }, 1000)
 
@@ -181,7 +196,6 @@ button.addEventListener('click', () => {
         duration: undefined
     }
     currentTimeTracker.addPhase(currentPhase);
-    currentTimeTracker.updateDebt();
     currentTimeTracker.updateRemainingTimeTemplate(remaining);
     currentTimeTracker.updateTimeToLeaveTemplate(ttl);
     currentTimeTracker.updateCurrentPhaseTemplate(current)
