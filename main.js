@@ -47,7 +47,7 @@ class TimeTracker {
     getFormattedTimeToLeave() {
         let timeToLeave = this.getEstimatedTimeToLeave();
         let date = new Date(timeToLeave);
-        return date.toLocaleTimeString("en-EN", {hour: '2-digit', minute: "2-digit" });
+        return date.toLocaleTimeString("en-EN", { hour: '2-digit', minute: "2-digit" });
     }
     static checkForUpdate(timeTracker) {
         if (!timeTracker.startTime) return false;
@@ -67,33 +67,28 @@ class TimeTracker {
         }
     }
     getBreakTime() {
-        let sum = 0;
-        let length = this.phases.length;
-        for (let i = 0; i < length - 1; i++) {
-            let elt = this.phases[i]
-            if (elt.type == "Break") {
-                sum += elt.duration;
-            }
-        }
-        return sum;
+
+        return this.phases.slice(0, this.phases.length - 1)
+                          .filter((elt) => elt.type == "Break")
+                          .reduce((prev, curr) => prev + curr.duration, 0);
     }
-    choosePhaseEmoji(phase){
-        if(phase.type == "Work"){
-            return '&#x1F4BB;'; 
+    choosePhaseEmoji(phase) {
+        if (phase.type == "Work") {
+            return '&#x1F4BB;';
         }
         else {
-            if(phase.duration >= 5*60*1000 && phase.duration < 30*60*1000) return "&#x2615;"
-            else if(phase.duration < 2*60*1000) return "&#x1F4F1;"
-            else if(phase.duration >= 2*60*1000 && phase.duration < 5*60*1000) return "&#x1F6BB;"
-            else if(phase.duration >= 30*60*1000) return "&#x1F371;";
+            if (phase.duration >= 5 * 60 * 1000 && phase.duration < 30 * 60 * 1000) return "&#x2615;"
+            else if (phase.duration < 2 * 60 * 1000) return "&#x1F4F1;"
+            else if (phase.duration >= 2 * 60 * 1000 && phase.duration < 5 * 60 * 1000) return "&#x1F6BB;"
+            else if (phase.duration >= 30 * 60 * 1000) return "&#x1F371;";
         }
     }
     buildPhasesTemplates(parentNode) {
         parentNode.innerHTML = `<tr> <th>Type</th><th>Period</th><th>Duration</th></tr>`;
         for (let i = 0; i < this.phases.length - 1; i++) {
             let phase = this.phases[i];
-            let start = new Date(phase.start).toLocaleTimeString("en-EN", {hour: "2-digit", minute:"2-digit"});
-            let end = new Date(phase.end).toLocaleTimeString("en-EN", {hour: "2-digit", minute:"2-digit"});
+            let start = new Date(phase.start).toLocaleTimeString("en-EN", { hour: "2-digit", minute: "2-digit" });
+            let end = new Date(phase.end).toLocaleTimeString("en-EN", { hour: "2-digit", minute: "2-digit" });
 
             let phaseTr = document.createElement("tr");
             phaseTr.innerHTML = `<td><span>${this.choosePhaseEmoji(phase)}</span></td>
@@ -165,7 +160,7 @@ hour.innerHTML = today.toLocaleTimeString("en-EN", { hour: '2-digit', minute: '2
 
 setInterval(() => {
     currentTimeTracker.updateCurrentPhaseTemplate(current)
-   
+
 }, 1000)
 
 button.addEventListener('click', () => {
@@ -212,13 +207,13 @@ window.addEventListener('load', () => {
     }
 
     let lastPhase = currentTimeTracker.getLastPhase()
-    if(lastPhase){
+    if (lastPhase) {
         working = (lastPhase.type == "Work");
     }
     else {
         working = false;
     }
-    
+
     button.innerHTML = (working) ? "Take a Break" : "Go Work !";
     currentTimeTracker.updateStartingTimeTemplate(hour)
     currentTimeTracker.updateTimeToLeaveTemplate(ttl);
