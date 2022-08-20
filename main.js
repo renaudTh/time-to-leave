@@ -16,17 +16,15 @@ class TimeTracker {
         timeTrack.dayDuration = json.dayDuration;
         timeTrack.startTime = json.startTime;
         timeTrack.phases = [];
-        for(let prop of json.phases){
+        for (let prop of json.phases) {
             timeTrack.phases.push(Phase.newFromJson(prop));
         }
-
-
         timeTrack.debt = json.debt;
         return timeTrack;
     }
 
     addPhase(phase) {
-        if(!(phase instanceof Phase)) throw new Error("The phase you give is not of type 'Phase'.");
+        if (!(phase instanceof Phase)) throw new Error("The phase you give is not of type 'Phase'.");
         this.phases.push(phase);
     }
 
@@ -56,11 +54,11 @@ class TimeTracker {
         return (now >= startPlusOneDay)
     }
 
-    getCumulativeTime(phaseType){
-        if(!(phaseType instanceof PhaseType)) throw new Error("The phase type is incorrect");
+    getCumulativeTime(phaseType) {
+        if (!(phaseType instanceof PhaseType)) throw new Error("The phase type is incorrect");
         return this.phases.slice(0, this.phases.length)
-                          .filter((elt) => elt.type.equals(phaseType))
-                          .reduce((prev, curr) => prev + curr.getDuration(), 0);
+            .filter((elt) => elt.type.equals(phaseType))
+            .reduce((prev, curr) => prev + curr.getDuration(), 0);
     }
 
     buildPhasesTemplates(parentNode) {
@@ -75,10 +73,10 @@ class TimeTracker {
     updateRemainingTimeTemplate(node) {
         let time = this.dayDuration - this.getCumulativeTime(PhaseType.Work);
         let phrase = `&#9203; Your remaining work time is ${formatTime(time)}`
-        if(time < 0){
+        if (time < 0) {
             phrase = `&#x23F0;Your work is done, you may leave. Well done &#x1F4AA;`
         }
-        node.innerHTML= phrase;
+        node.innerHTML = phrase;
     }
     updateTimeToLeaveTemplate(node) {
         node.innerHTML = `&#x1F3C1; Your time to leave is approximately ${timeStringHm(this.getEstimatedTimeToLeave())}`
@@ -88,76 +86,71 @@ class TimeTracker {
             node.innerHTML = `&#128681; Your work day hasn't started yet.`;
         }
         else {
-            node.innerHTML= `&#128681; Your work day started at ${timeStringHm(this.startTime)}`
+            node.innerHTML = `&#128681; Your work day started at ${timeStringHm(this.startTime)}`
         }
     }
     updateCurrentPhaseTemplate(node) {
         let phase = this.getLastPhase();
         let phrase = `Your work day hasn't started.`;
         if (phase) {
-         phrase = phase.getSummary();
+            phrase = phase.getSummary();
         }
-       
+
         node.innerText = phrase;
     }
 }
 
-class PhaseType{
+class PhaseType {
     static Work = new PhaseType("Work");
     static Break = new PhaseType("Break");
-    constructor(name){
+    constructor(name) {
         this.name = name;
     }
-    equals(other){
-        
-        if(!(other instanceof PhaseType)) return false;
+    equals(other) {
+
+        if (!(other instanceof PhaseType)) return false;
         return (other.name == this.name);
     }
 }
 
 class Phase {
-    
-    constructor(type, start){
-        if(type && !(type instanceof PhaseType)) throw new Error("The type is not valid.");
+
+    constructor(type, start) {
+        if (type && !(type instanceof PhaseType)) throw new Error("The type is not valid.");
         this.type = type;
         this.start = start;
         this.end = undefined;
         this.duration = undefined;
     }
-    static newFromJson(json){
+    static newFromJson(json) {
 
         let phase = new Phase();
-
         phase.type = new PhaseType(json.type.name);
         phase.start = json.start;
         phase.end = json.end;
         phase.duration = json.duration;
-
         return phase;
-
     }
-    getDuration(){
-        if(this.duration){
+    getDuration() {
+        if (this.duration) 
             return this.duration;
-        }
-        else{
+        else 
             return Date.now() - this.start;
-        }
     }
-    getStart(){
+    getStart() {
         return this.start;
     }
-    getType(){
+    getType() {
         return this.type;
     }
-    complete(end){
+    complete(end) {
         this.end = end;
         this.duration = this.end - this.start;
     }
-    getSummary(){
+    getSummary() {
         return `You ${(this.type.equals(PhaseType.Work)) ? "are working " : "have break"} for ${formatTime(this.getDuration())}`;
     }
-    chooseEmoji(){
+    chooseEmoji() {
         if (this.type.equals(PhaseType.Work)) {
             return '&#x1F4BB;';
         }
@@ -168,22 +161,20 @@ class Phase {
             else return "&#x1F35D;";
         }
     }
-    getPhaseLineTemplate(){
+    getPhaseLineTemplate() {
         let phaseTr = document.createElement("tr");
         phaseTr.innerHTML = `<td><span>${this.chooseEmoji()}</span></td>
                              <td>${timeStringHm(this.start)} - ${timeStringHm(this.end)}</td>
                              <td>${formatTime(this.duration)}</td>`;
         return phaseTr;
     }
-
-
 }
 
-function timeStringHm(time){
+function timeStringHm(time) {
     return new Date(time).toLocaleTimeString("en-EN", { hour: '2-digit', minute: "2-digit" })
 }
 function formatTime(time) {
-    let seconds = Math.floor(time / 1000);  
+    let seconds = Math.floor(time / 1000);
     let h = Math.floor(seconds / 60 / 60);
     seconds = seconds % (60 * 60);
     let m = Math.floor(seconds / 60);
@@ -197,9 +188,7 @@ function formatTime(time) {
 const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
 let today = new Date()
 let todayFormatted = today.toLocaleDateString("en-EN", options);
-let currentTimeTracker;
-
-
+let timeTracker;
 let working;
 
 let button = document.getElementById("toggle");
@@ -212,33 +201,31 @@ let current = document.getElementById("current");
 document.getElementById("today").innerText = todayFormatted;
 
 setInterval(() => {
-    currentTimeTracker.updateCurrentPhaseTemplate(current);
-    currentTimeTracker.updateRemainingTimeTemplate(remaining);
-    currentTimeTracker.updateTimeToLeaveTemplate(ttl);
-
+    timeTracker.updateCurrentPhaseTemplate(current);
+    timeTracker.updateRemainingTimeTemplate(remaining);
+    timeTracker.updateTimeToLeaveTemplate(ttl);
 
 }, 1000)
 
 button.addEventListener('click', () => {
 
-
-    let lastPhase = currentTimeTracker.getLastPhase();
+    let lastPhase = timeTracker.getLastPhase();
     if (lastPhase) {
-       lastPhase.complete(Date.now()); 
+        lastPhase.complete(Date.now());
     }
     else {
-        currentTimeTracker.startTime = Date.now();
+        timeTracker.startTime = Date.now();
     }
     let type = (working) ? PhaseType.Break : PhaseType.Work;
     let currentPhase = new Phase(type, Date.now());
     console.log(currentPhase);
 
-    currentTimeTracker.addPhase(currentPhase);
-    currentTimeTracker.updateRemainingTimeTemplate(remaining);
-    currentTimeTracker.updateTimeToLeaveTemplate(ttl);
-    currentTimeTracker.updateCurrentPhaseTemplate(current)
-    currentTimeTracker.store();
-    currentTimeTracker.buildPhasesTemplates(phases);
+    timeTracker.addPhase(currentPhase);
+    timeTracker.updateRemainingTimeTemplate(remaining);
+    timeTracker.updateTimeToLeaveTemplate(ttl);
+    timeTracker.updateCurrentPhaseTemplate(current);
+    timeTracker.store();
+    timeTracker.buildPhasesTemplates(phases);
     working = !working;
     button.innerHTML = (working) ? "Take a Break" : "Go Work !";
 })
@@ -247,29 +234,28 @@ window.addEventListener('load', () => {
 
     let json = TimeTracker.get("timeTracker");
     if (!json) {
-        currentTimeTracker = new TimeTracker("timeTracker", 60 * 1000);
+        timeTracker = new TimeTracker("timeTracker", 7 * 60 * 60 * 1000);
     }
     else {
         let oldTT = TimeTracker.newFromJson(json);
-        currentTimeTracker = oldTT;
+        timeTracker = oldTT;
         if (TimeTracker.checkForUpdate(oldTT)) {
-            currentTimeTracker = new TimeTracker("timeTracker", 7 * 60 * 60 * 1000);
+            timeTracker = new TimeTracker("timeTracker", 7 * 60 * 60 * 1000);
         }
     }
 
-    let lastPhase = currentTimeTracker.getLastPhase()
+    let lastPhase = timeTracker.getLastPhase()
     if (lastPhase) {
         working = (lastPhase.type.equals(PhaseType.Work));
     }
     else {
         working = false;
     }
-
     button.innerHTML = (working) ? "Take a Break" : "Go Work !";
-     currentTimeTracker.updateStartingTimeTemplate(hour)
-    currentTimeTracker.updateTimeToLeaveTemplate(ttl);
-    currentTimeTracker.updateRemainingTimeTemplate(remaining);
-    currentTimeTracker.store();
-    currentTimeTracker.buildPhasesTemplates(phases);
-    console.log(currentTimeTracker);
+    timeTracker.updateStartingTimeTemplate(hour)
+    timeTracker.updateTimeToLeaveTemplate(ttl);
+    timeTracker.updateRemainingTimeTemplate(remaining);
+    timeTracker.updateCurrentPhaseTemplate(current);
+    timeTracker.store();
+    timeTracker.buildPhasesTemplates(phases);
 })
