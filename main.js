@@ -59,7 +59,7 @@ class TimeTracker {
     getCumulativeTime(phaseType){
         if(!(phaseType instanceof PhaseType)) throw new Error("The phase type is incorrect");
         return this.phases.slice(0, this.phases.length - 1)
-                          .filter((elt) => elt.type === phaseType)
+                          .filter((elt) => elt.type.equals(phaseType))
                           .reduce((prev, curr) => prev + curr.getDuration(), 0);
     }
 
