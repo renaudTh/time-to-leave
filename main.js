@@ -74,7 +74,7 @@ class TimeTracker {
         let time = this.dayDuration - this.getCumulativeTime(PhaseType.Work);
         let phrase = `&#9203; Your remaining work time is ${formatTime(time)}`
         if (time < 0) {
-            phrase = `&#x23F0;Your work is done, you may leave. Well done &#x1F4AA;`
+            phrase = `&#x23F0;Your work is done &#x1F4AA; You may leave.`
         }
         node.innerHTML = phrase;
     }
@@ -221,6 +221,7 @@ button.addEventListener('click', () => {
     console.log(currentPhase);
 
     timeTracker.addPhase(currentPhase);
+    timeTracker.updateStartingTimeTemplate(hour);
     timeTracker.updateRemainingTimeTemplate(remaining);
     timeTracker.updateTimeToLeaveTemplate(ttl);
     timeTracker.updateCurrentPhaseTemplate(current);
